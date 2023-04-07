@@ -30,34 +30,41 @@
             <v-row justify="space-between">
               <v-col cols="auto">
                 <h2 class="text-h4">Ribbon Donor List</h2>
-
                 <p class="text-primary mt-3">In Beta now!</p>
-
                 <p class="mt-3">See all those that have given in one place!</p>
               </v-col>
             </v-row>
-            <v-row>
-              <v-col>
-                <table v-if="donors">
-                  <thead>
-                    <tr>
-                      <th class="text-left">Name</th>
-                      <th class="text-left">Email</th>
-                      <th class="text-left">Total Donations</th>
-                      <th class="text-left">First Donation</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="item in donors.data" :key="item.id">
-                      <td>{{ item.full_name }}</td>
-                      <td>{{ item.email }}</td>
-                      <td>{{ item.total_donations }}</td>
-                      <td>{{ item.first_donation }}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </v-col>
-            </v-row>
+            <v-card>
+              <v-row>
+                <v-col cols="3" style="margin: 10px">
+                  <v-text-field
+                    v-model="filterKey"
+                    append-icon="mdi-magnify"
+                    label="Search"
+                    single-line
+                    hide-details
+                    density="compact"
+                    outlined
+                  ></v-text-field>
+                </v-col>
+              </v-row>
+              <v-data-table
+                v-resize="onResize"
+                :headers="donorHeader"
+                :items="donors"
+                fixed-header
+                :height="windowSize.y - 450"
+                :search="filterKey"
+                item-key="id"
+                sort-by="LastModified"
+                :sort-desc="true"
+                must-sort
+                loading-text="Loading... Please wait"
+                :items-per-page="5"
+                @click:row="handleClick"
+              >
+              </v-data-table>
+            </v-card>
           </v-container>
         </section>
       </v-sheet>
@@ -86,7 +93,6 @@
         </section>
       </v-sheet>
     </v-main>
-
     <v-footer>
       <v-container class="text-overline d-flex align-center justify-space-between">
         <div>Copyright &copy; 2023 Flourish Change Inc dba Ribbon</div>
@@ -94,6 +100,20 @@
         <v-icon icon="mdi-bank" size="x-large" />
       </v-container>
     </v-footer>
+    <v-dialog v-model="isLoading" persistent width="300">
+      <v-card color="#00754A" dark>
+        <v-card-text>
+          Please wait...
+          <v-progress-linear indeterminate color="white" class="mb-0"></v-progress-linear>
+        </v-card-text>
+      </v-card>
+    </v-dialog>
+    <v-snackbar v-model="snackbar" :timeout="2000" right top>
+      {{ errorMessage }}
+      <template v-slot:actions>
+        <v-btn color="blue" variant="text" @click="snackbar = false"> Close </v-btn>
+      </template>
+    </v-snackbar>
   </v-app>
 </template>
 
@@ -104,34 +124,94 @@ export default {
 
   data() {
     return {
-      donors: null,
+      donors: [],
+      filterKey: '',
+      donorHeader: [
+        {
+          text: 'Name',
+          sortable: true,
+          value: 'full_name',
+          class: 'donor_header',
+        },
+        {
+          text: 'DONATION AMOUNTS',
+          sortable: true,
+          value: 'total_donations',
+          class: 'donor_header',
+        },
+        {
+          text: 'CREATED AT',
+          sortable: true,
+          value: 'first_donation',
+          class: 'donor_header',
+        },
+        {
+          text: 'EMAIL',
+          sortable: true,
+          value: 'email',
+          class: 'donor_header',
+        },
+      ],
+      isLoading: false,
+      windowSize: {
+        x: 0,
+        y: 0,
+      },
       valid: false,
       email: '',
-      donor_id: '',
       message: '',
+      donor_id: '',
+      snackbar: false,
+      errorMessage: '',
       emailRules: [
         (value) => {
-          if (value) return true
-
+          if (value.length > 0) return true
           return 'E-mail is required.'
         },
       ],
       messageRules: [
         (value) => {
-          if (value) return true
-
-          return 'Message is required.'
+          if (value && value.length > 15) return true
+          return 'Message should be longer than 15 characters.'
         },
       ],
     }
   },
   mounted() {
-    axios.get('https://interview.ribbon.giving/api/donors').then((response) => (this.donors = response.data))
+    this.isLoading = true
+    axios
+      .get('https://interview.ribbon.giving/api/donors')
+      .then((response) => {
+        this.donors = response.data.data
+        this.isLoading = false
+      })
+      .catch((err) => {
+        this.errorMessage = err.message
+        this.snackbar = true
+        this.isLoading = false
+      })
   },
   methods: {
     async submit() {
       // Send message to server.
     },
+    handleClick(value) {
+      alert(value.id)
+    },
+    onResize() {
+      this.windowSize = { x: window.innerWidth, y: window.innerHeight }
+    },
   },
 }
 </script>
+<style>
+body {
+  color: rgba(58, 58, 64, 0.87) !important;
+}
+.donor_header {
+  background-color: rgba(58, 58, 64, 0.05) !important;
+}
+tr:hover {
+  background-color: rgba(58, 58, 64, 0.03) !important;
+}
+</style>
