@@ -80,14 +80,34 @@
                   <p class="mt-3">Easily send messages to those that have given!</p>
                 </v-responsive>
               </v-col>
-              <v-sheet width="400" class="mx-auto">
-                <v-form v-model="valid" validate-on="submit" @submit.prevent="submit">
-                  <v-textarea v-model="message" :rules="messageRules" label="Message"></v-textarea>
-                  <v-text-field v-model="email" :rules="emailRules" label="Email"></v-text-field>
-                  <v-text-field v-model="donor_id" label="Donor Id"></v-text-field>
+              <v-col cols="5" style="background: transparent; border: none">
+                <v-form ref="msgForm" v-model="valid" validate-on="submit" @submit.prevent="submit">
+                  <v-textarea
+                    v-model="message"
+                    :rules="messageRules"
+                    label="Message"
+                    single-line
+                    density="compact"
+                    outlined
+                  ></v-textarea>
+                  <v-text-field
+                    v-model="email"
+                    :rules="emailRules"
+                    label="Email"
+                    single-line
+                    density="compact"
+                    outlined
+                  ></v-text-field>
+                  <v-text-field
+                    single-line
+                    density="compact"
+                    outlined
+                    v-model="donor_id"
+                    label="Donor Id"
+                  ></v-text-field>
                   <v-btn type="submit" block class="mt-2">Send</v-btn>
                 </v-form>
-              </v-sheet>
+              </v-col>
             </v-row>
           </v-container>
         </section>
@@ -194,6 +214,33 @@ export default {
   methods: {
     async submit() {
       // Send message to server.
+      if (this.valid) {
+        this.isLoading = true
+        axios
+          .post(
+            `https://interview.ribbon.giving/api/donors/${this.donor_id}/send-message`,
+            {
+              message: this.message,
+              email: this.email,
+            },
+            {
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            }
+          )
+          .then(() => {
+            this.errorMessage = 'Message sent successfully'
+          })
+          .catch((err) => {
+            this.errorMessage = err.message
+          })
+          .finally(() => {
+            this.$refs.msgForm.reset();
+            this.isLoading = false
+            this.snackbar = true
+          })
+      }
     },
     handleClick(value) {
       alert(value.id)
