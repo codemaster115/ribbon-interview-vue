@@ -5,7 +5,7 @@ const fs = require('fs')
 const path = require('path')
 const shell = require('shelljs')
 
-const resolve = file => path.resolve(__dirname, file)
+const resolve = (file) => path.resolve(__dirname, file)
 const pkgPath = resolve('../package.json')
 const packages = require(pkgPath)
 const THEME_NAME = packages.name
